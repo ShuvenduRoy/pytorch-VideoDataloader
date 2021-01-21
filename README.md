@@ -71,7 +71,7 @@ If all videos are in same folder and you need to split it into train and test fo
            ])
         )
     
-    train_loader = torch.utils.data.DataLoader(dl.train_loader, batch_size = 2, shuffle = True)
+    train_loader = torch.utils.data.DataLoader(dl.train_dataset, batch_size = 2, shuffle = True)
     test_loader = torch.utils.data.DataLoader(dl.test_dataset, batch_size = 2, shuffle = True)
     
 for videos in train_loader:
