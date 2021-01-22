@@ -6,10 +6,44 @@ import collections
 import random
 import cv2
 import os
+from torchvision.io import read_video
 
-__all__ = ['VideoToTensor', 'VideoFilePathToTensor', 'VideoFolderPathToTensor', 'VideoResize', 'VideoRandomCrop', 'VideoCenterCrop', 'VideoRandomHorizontalFlip',
+
+__all__ = ['TorchVideoToTensor', 'VideoToTensor', 'VideoFilePathToTensor', 'VideoFolderPathToTensor', 'VideoResize', 'VideoRandomCrop', 'VideoCenterCrop', 'VideoRandomHorizontalFlip',
             'VideoRandomVerticalFlip', 'VideoGrayscale']
 
+
+class TorchVideoToTensor(object):
+    """ load video at given file path to torch.Tensor (C x L x H x W, C = 3)
+        It can be composed with torchvision.transforms.Compose().
+
+    Args:
+        max_len (int): Maximum output time depth (L <= max_len). Default is None.
+            If it is set to None, it will output all frames.
+    """
+
+    def __init__(self, max_len=None):
+        self.max_len = max_len
+        self.channels = 3  # only available to read 3 channels video
+
+    def __call__(self, path):
+        # open video file
+        video = read_video(path)[0]
+        video = video.permute(3, 0, 1, 2)
+        num_frames = video.size()[1]
+
+        sample_factor = num_frames // self.max_len
+        random_start_idx = random.randint(0, num_frames - (sample_factor*self.max_len))
+        if random_start_idx > 1:
+            random_start_idx = (random_start_idx -1)
+
+        sample_index = []
+        for index in range(self.max_len):
+            frame_index = index * sample_factor + random_start_idx
+            sample_index.append(frame_index)
+
+        video = video[:, sample_index, :, :] / 255
+        return video
 
 class VideoToTensor(object):
     """ load video at given file path to torch.Tensor (C x L x H x W, C = 3) 
@@ -18,12 +52,6 @@ class VideoToTensor(object):
     Args:
         max_len (int): Maximum output time depth (L <= max_len). Default is None.
             If it is set to None, it will output all frames.
-        fps (int): sample frame per seconds. It must lower than or equal the origin video fps.
-            Default is None.
-        padding_mode (str): Type of padding. Default to None. Only available when max_len is not None.
-            - None: won't padding, video length is variable.
-            - 'zero': padding the rest empty frames to zeros.
-            - 'last': padding the rest empty frames to the last frame.
     """
 
     def __init__(self, max_len=None):

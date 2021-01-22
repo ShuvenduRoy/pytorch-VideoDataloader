@@ -99,25 +99,25 @@ class VideoDataloader(Dataset):
 
 
 if __name__ == '__main__':
-    dl = VideoDataloader('C:\\Users\\shuvendu\\Desktop\\UCF-101',
+    dl = VideoDataloader('D:\\Dataset\\Video\\UCF\\UCF-101',
                          transform=torchvision.transforms.Compose([
-                             transforms.VideoToTensor(max_len=16),
+                             transforms.TorchVideoToTensor(max_len=16),
                              transforms.VideoRandomCrop([236, 236]),
                              transforms.VideoResize([224, 224]),
                          ])
                          )
     video, label = dl[0]
 
-    dl = VideoFolderDataloader('C:\\Users\\shuvendu\\Desktop\\UCF',
+    dl = VideoFolderDataloader('D:\\Dataset\\Video\\UCF\\UCF-101',
            train_ratio=0.9,
            train_transform=torchvision.transforms.Compose([
-               transforms.VideoToTensor(max_len=16),
+               transforms.TorchVideoToTensor(max_len=16),
                transforms.VideoRandomCrop([236, 236]),
                transforms.VideoResize([224, 224]),
            ]),
 
            test_transform=torchvision.transforms.Compose([
-               transforms.VideoToTensor(max_len=16),
+               transforms.TorchVideoToTensor(max_len=16),
                transforms.VideoCenterCrop([236, 236]),
                transforms.VideoResize([224, 224]),
            ])
