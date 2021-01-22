@@ -7,9 +7,11 @@ import random
 import cv2
 import os
 from torchvision.io import read_video
+from decord import VideoReader
+from decord import cpu, gpu
 
 
-__all__ = ['TorchVideoToTensor', 'VideoToTensor', 'VideoFilePathToTensor', 'VideoFolderPathToTensor', 'VideoResize', 'VideoRandomCrop', 'VideoCenterCrop', 'VideoRandomHorizontalFlip',
+__all__ = ['DecordVideoToTensor', 'TorchVideoToTensor', 'VideoToTensor', 'VideoFilePathToTensor', 'VideoFolderPathToTensor', 'VideoResize', 'VideoRandomCrop', 'VideoCenterCrop', 'VideoRandomHorizontalFlip',
             'VideoRandomVerticalFlip', 'VideoGrayscale']
 
 
@@ -44,6 +46,42 @@ class TorchVideoToTensor(object):
 
         video = video[:, sample_index, :, :] / 255
         return video
+
+
+class DecordVideoToTensor(object):
+    """ load video at given file path to torch.Tensor (C x L x H x W, C = 3)
+        It can be composed with torchvision.transforms.Compose().
+
+    Args:
+        max_len (int): Maximum output time depth (L <= max_len). Default is None.
+            If it is set to None, it will output all frames.
+    """
+
+    def __init__(self, max_len=None):
+        self.max_len = max_len
+        self.channels = 3  # only available to read 3 channels video
+
+    def __call__(self, path):
+        vr = VideoReader(path)
+
+        # video = video.permute(3, 0, 1, 2)
+        num_frames = len(vr)
+
+        sample_factor = num_frames // self.max_len
+        random_start_idx = random.randint(0, num_frames - (sample_factor*self.max_len))
+        if random_start_idx > 1:
+            random_start_idx = (random_start_idx -1)
+
+        sample_index = []
+        for index in range(self.max_len):
+            frame_index = index * sample_factor + random_start_idx
+            sample_index.append(frame_index)
+
+        frames = vr.get_batch(sample_index)
+        frames = torch.from_numpy(frames.asnumpy())
+        video = frames.permute(3, 0, 1, 2)
+        return video
+
 
 class VideoToTensor(object):
     """ load video at given file path to torch.Tensor (C x L x H x W, C = 3) 
