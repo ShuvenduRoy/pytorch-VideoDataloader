@@ -367,7 +367,7 @@ class VideoRandomCrop(object):
         self.size = size
 
     def __call__(self, video):
-        """ 
+        """
         Args:
             video (torch.Tensor): Video (C x L x H x W) to be cropped.
 
@@ -377,12 +377,22 @@ class VideoRandomCrop(object):
 
         H, W = video.size()[2:]
         h, w = self.size
-        assert H >= h and W >= w
 
-        top = np.random.randint(0, H - h)
-        left = np.random.randint(0, W - w)
+        try:
+            if H >= h and W >= w:
 
-        video = video[:, :, top: top + h, left: left + w]
+                top = np.random.randint(0, H - h)
+                left = np.random.randint(0, W - w)
+
+                video = video[:, :, top: top + h, left: left + w]
+
+            else:
+                top=0
+                left = np.random.randint(0, w - h)
+
+                video = video[:, :, top: top + h, left: left + h]
+        except:
+            print('Random Crop error')
 
         return video
 
@@ -401,20 +411,27 @@ class VideoCenterCrop(object):
         """
         Args:
             video (torch.Tensor): Video (C x L x H x W) to be cropped.
-        
+
         Returns:
             torch.Tensor: Cropped Video (C x L x h x w).
         """
 
         H, W = video.size()[2:]
         h, w = self.size
-        assert H >= h and W >= w
+        try:
+            if H >= h and W >= w:
 
-        top = int((H - h) / 2)
-        left = int((W - w) / 2)
+                top = int((H - h) / 2)
+                left = int((W - w) / 2)
 
-        video = video[:, :, top: top + h, left: left + w]
+                video = video[:, :, top: top + h, left: left + w]
+            else:
+                top = 0
+                left = int((w - h) / 2)
 
+                video = video[:, :, top: top + h, left: left + h]
+        except:
+            print('Center crop error')
         return video
 
 
