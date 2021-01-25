@@ -1,11 +1,6 @@
-import torch
 from torch.utils.data import Dataset
-import cv2
 import numpy as np
-import pandas as pd
 import os
-import torchvision
-import transforms
 
 __all__ = ['VideoFolderDataloader', 'VideoFileDataloader', 'VideoDataloader']
 
@@ -23,9 +18,10 @@ class VideoFolderDataloader(object):
         np.random.permutation(range(len(self.all_videos)))
         train_files = self.all_videos[:int(len(self.all_videos) * self.train_ratio)]
         test_files = self.all_videos[int(len(self.all_videos) * self.train_ratio):]
-
-        self.train_dataset = VideoFileDataloader(train_files, True, train_transform)
-        self.test_dataset = VideoFileDataloader(test_files, False, test_transform)
+        print('Training examples: ', len(train_files))
+        print('Testing examples: ', len(test_files))
+        self.train_dl = VideoFileDataloader(train_files, True, train_transform)
+        self.test_dl = VideoFileDataloader(test_files, False, test_transform)
 
 
 class VideoFileDataloader(Dataset):
@@ -54,10 +50,20 @@ class VideoFileDataloader(Dataset):
         return len(self.all_videos)
 
     def __getitem__(self, index):
-        video = self.all_videos[index]
-        label = self.labels[index]
-        if self.transform:
-            video = self.transform(video)
+        try:
+            video = self.all_videos[index]
+            label = self.labels[index]
+            if self.transform:
+                video = self.transform(video)
+
+        except Exception as e:
+            print(e)
+            print('Error with file: ', self.all_videos[index])
+
+            video = self.all_videos[index+1]
+            label = self.labels[index+1]
+            if self.transform:
+                video = self.transform(video)
         return video, label
 
 
@@ -70,6 +76,7 @@ class VideoDataloader(Dataset):
         for path, subdirs, files in os.walk(self.folder_location):
             for name in files:
                 self.all_videos.append(os.path.join(path, name))
+        print('Total number of datapoints ', len(self.all_videos))
 
         self.seperator = '/'
         if '\\' in self.all_videos[0]:
@@ -97,40 +104,3 @@ class VideoDataloader(Dataset):
             video = self.transform(video)
         return video, label
 
-
-if __name__ == '__main__':
-    dl = VideoDataloader('D:\\Dataset\\Video\\UCF\\UCF-101',
-                         transform=torchvision.transforms.Compose([
-                             transforms.TorchVideoToTensor(max_len=16),
-                             transforms.VideoRandomCrop([236, 236]),
-                             transforms.VideoResize([224, 224]),
-                         ])
-                         )
-    video, label = dl[0]
-
-    dl = VideoFolderDataloader('D:\\Dataset\\Video\\UCF\\UCF-101',
-           train_ratio=0.9,
-           train_transform=torchvision.transforms.Compose([
-               transforms.TorchVideoToTensor(max_len=16),
-               transforms.VideoRandomCrop([236, 236]),
-               transforms.VideoResize([224, 224]),
-           ]),
-
-           test_transform=torchvision.transforms.Compose([
-               transforms.TorchVideoToTensor(max_len=16),
-               transforms.VideoCenterCrop([236, 236]),
-               transforms.VideoResize([224, 224]),
-           ])
-        )
-
-    video, label = dl.train_dataset[0]
-
-    frame1 = torchvision.transforms.ToPILImage()(video[:, 0, :, :])
-    frame2 = torchvision.transforms.ToPILImage()(video[:, 15, :, :])
-    frame1.show()
-    frame2.show()
-
-    test_loader = torch.utils.data.DataLoader(dl.test_dataset, batch_size=1, shuffle=True)
-
-    for videos, labels in test_loader:
-        print(videos.size(), label)

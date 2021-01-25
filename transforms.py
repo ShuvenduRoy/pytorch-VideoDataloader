@@ -7,12 +7,10 @@ import random
 import cv2
 import os
 from torchvision.io import read_video
-from decord import VideoReader
-from decord import cpu, gpu
 
-
-__all__ = ['DecordVideoToTensor', 'TorchVideoToTensor', 'VideoToTensor', 'VideoFilePathToTensor', 'VideoFolderPathToTensor', 'VideoResize', 'VideoRandomCrop', 'VideoCenterCrop', 'VideoRandomHorizontalFlip',
-            'VideoRandomVerticalFlip', 'VideoGrayscale']
+__all__ = ['TorchVideoToTensor', 'VideoToTensor', 'VideoFilePathToTensor', 'VideoFolderPathToTensor', 'VideoResize',
+           'VideoRandomCrop', 'VideoCenterCrop', 'VideoRandomHorizontalFlip',
+           'VideoRandomVerticalFlip', 'VideoGrayscale']
 
 
 class TorchVideoToTensor(object):
@@ -35,9 +33,9 @@ class TorchVideoToTensor(object):
         num_frames = video.size()[1]
 
         sample_factor = num_frames // self.max_len
-        random_start_idx = random.randint(0, num_frames - (sample_factor*self.max_len))
+        random_start_idx = random.randint(0, num_frames - (sample_factor * self.max_len))
         if random_start_idx > 1:
-            random_start_idx = (random_start_idx -1)
+            random_start_idx = (random_start_idx - 1)
 
         sample_index = []
         for index in range(self.max_len):
@@ -48,43 +46,8 @@ class TorchVideoToTensor(object):
         return video
 
 
-class DecordVideoToTensor(object):
-    """ load video at given file path to torch.Tensor (C x L x H x W, C = 3)
-        It can be composed with torchvision.transforms.Compose().
-
-    Args:
-        max_len (int): Maximum output time depth (L <= max_len). Default is None.
-            If it is set to None, it will output all frames.
-    """
-
-    def __init__(self, max_len=None):
-        self.max_len = max_len
-        self.channels = 3  # only available to read 3 channels video
-
-    def __call__(self, path):
-        vr = VideoReader(path)
-
-        # video = video.permute(3, 0, 1, 2)
-        num_frames = len(vr)
-
-        sample_factor = num_frames // self.max_len
-        random_start_idx = random.randint(0, num_frames - (sample_factor*self.max_len))
-        if random_start_idx > 1:
-            random_start_idx = (random_start_idx -1)
-
-        sample_index = []
-        for index in range(self.max_len):
-            frame_index = index * sample_factor + random_start_idx
-            sample_index.append(frame_index)
-
-        frames = vr.get_batch(sample_index)
-        frames = torch.from_numpy(frames.asnumpy())
-        video = frames.permute(3, 0, 1, 2)
-        return video
-
-
 class VideoToTensor(object):
-    """ load video at given file path to torch.Tensor (C x L x H x W, C = 3) 
+    """ load video at given file path to torch.Tensor (C x L x H x W, C = 3)
         It can be composed with torchvision.transforms.Compose().
 
     Args:
@@ -115,9 +78,9 @@ class VideoToTensor(object):
         num_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         sample_factor = num_frames // self.max_len
-        random_start_idx = random.randint(0, num_frames - (sample_factor*self.max_len))
+        random_start_idx = random.randint(0, num_frames - (sample_factor * self.max_len))
         if random_start_idx > 1:
-            random_start_idx = (random_start_idx -1)
+            random_start_idx = (random_start_idx - 1)
 
         frames = torch.FloatTensor(self.channels, self.max_len, height, width)
 
@@ -235,12 +198,12 @@ class VideoFilePathToTensor(object):
 
 
 class VideoFolderPathToTensor(object):
-    """ load video at given folder path to torch.Tensor (C x L x H x W) 
+    """ load video at given folder path to torch.Tensor (C x L x H x W)
         It can be composed with torchvision.transforms.Compose().
-        
+
     Args:
         max_len (int): Maximum output time depth (L <= max_len). Default is None.
-            If it is set to None, it will output all frames. 
+            If it is set to None, it will output all frames.
         padding_mode (str): Type of padding. Default to None. Only available when max_len is not None.
             - None: won't padding, video length is variable.
             - 'zero': padding the rest empty frames to zeros.
@@ -256,7 +219,7 @@ class VideoFolderPathToTensor(object):
         """
         Args:
             path (str): path of video folder.
-            
+
         Returns:
             torch.Tensor: Video Tensor (C x L x H x W)
         """
@@ -311,8 +274,8 @@ class VideoFolderPathToTensor(object):
 
 
 class VideoResize(object):
-    """ resize video tensor (C x L x H x W) to (C x L x h x w) 
-    
+    """ resize video tensor (C x L x H x W) to (C x L x h x w)
+
     Args:
         size (sequence): Desired output size. size is a sequence like (H, W),
             output size will matched to this.
@@ -328,7 +291,7 @@ class VideoResize(object):
         """
         Args:
             video (torch.Tensor): Video to be scaled (C x L x H x W)
-        
+
         Returns:
             torch.Tensor: Rescaled video (C x L x h x w)
         """
@@ -378,21 +341,24 @@ class VideoRandomCrop(object):
         H, W = video.size()[2:]
         h, w = self.size
 
-        try:
-            if H >= h and W >= w:
+        if H >= h and W >= w:
 
-                top = np.random.randint(0, H - h)
-                left = np.random.randint(0, W - w)
+            top = np.random.randint(0, H - h)
+            left = np.random.randint(0, W - w)
 
-                video = video[:, :, top: top + h, left: left + w]
+            video = video[:, :, top: top + h, left: left + w]
 
-            else:
+        else:
+            if w>h:
                 top=0
                 left = np.random.randint(0, w - h)
 
                 video = video[:, :, top: top + h, left: left + h]
-        except:
-            print('Random Crop error')
+            elif h>w:
+                top = np.random.randint(0, h-w)
+                left = 0
+
+                video = video[:, :, top: top + w, left: left + w]
 
         return video
 
@@ -418,20 +384,25 @@ class VideoCenterCrop(object):
 
         H, W = video.size()[2:]
         h, w = self.size
-        try:
-            if H >= h and W >= w:
 
-                top = int((H - h) / 2)
-                left = int((W - w) / 2)
+        if H >= h and W >= w:
 
-                video = video[:, :, top: top + h, left: left + w]
-            else:
+            top = int((H - h) / 2)
+            left = int((W - w) / 2)
+
+            video = video[:, :, top: top + h, left: left + w]
+        else:
+            if w>h:
                 top = 0
                 left = int((w - h) / 2)
 
                 video = video[:, :, top: top + h, left: left + h]
-        except:
-            print('Center crop error')
+            elif h > w:
+                top = int((h-w) / 2)
+                left = 0
+
+                video = video[:, :, top: top + w, left: left + w]
+
         return video
 
 
@@ -449,7 +420,7 @@ class VideoRandomHorizontalFlip(object):
         """
         Args:
             video (torch.Tensor): Video to flipped.
-        
+
         Returns:
             torch.Tensor: Randomly flipped video.
         """
@@ -475,7 +446,7 @@ class VideoRandomVerticalFlip(object):
         """
         Args:
             video (torch.Tensor): Video to flipped.
-        
+
         Returns:
             torch.Tensor: Randomly flipped video.
         """
