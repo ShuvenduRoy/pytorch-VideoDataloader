@@ -81,23 +81,23 @@ class TorchVideoToTensor(object):
         sample_index = []
         choice = np.random.choice(['random', 'uniform', 'sequential'], 1, p=[0.5, 0.1, 0.4])[0]
         if choice == 'uniform':
-            print('uniform')
+            # print('uniform')
             # uniform
             for index in range(self.max_len):
                 frame_index = index * sample_factor + random_start_idx
                 sample_index.append(frame_index)
         elif choice == 'sequential':
-            print('sequenial')
+            # print('sequenial')
             start_index = np.random.randint(0, num_frames-self.max_len, 1)[0]
             for index in range(self.max_len):
                 frame_index = index + start_index
                 sample_index.append(frame_index)
         else:
-            print('random')
+            # print('random')
             sample_index=np.random.randint(0, num_frames, self.max_len)
             sample_index.sort()
 
-        print(sample_index)
+        # print(sample_index)
         video = video[:, sample_index, :, :]  # / 255
         return video
 
