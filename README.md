@@ -38,6 +38,8 @@ If you have different training and testing folder in the dataset, use this one t
                  transforms.VideoToTensor(max_len=16),
                  transforms.VideoRandomCrop([236, 236]),
                  transforms.VideoResize([224, 224]),
+                 transforms.NormalizeVideo(mean=[0.43216, 0.394666, 0.37645],
+                                            std=[0.22803, 0.22145, 0.216989]),
              ])
         )
 
@@ -62,12 +64,16 @@ If all videos are in same folder and you need to split it into train and test fo
                transforms.VideoToTensor(max_len=16),
                transforms.VideoRandomCrop([236, 236]),
                transforms.VideoResize([224, 224]),
+               transforms.NormalizeVideo(mean=[0.43216, 0.394666, 0.37645],
+                                        std=[0.22803, 0.22145, 0.216989]),
            ]),
 
            test_transform=torchvision.transforms.Compose([
                transforms.VideoToTensor(max_len=16),
                transforms.VideoCenterCrop([236, 236]),
                transforms.VideoResize([224, 224]),
+               transforms.NormalizeVideo(mean=[0.43216, 0.394666, 0.37645],
+                                    std=[0.22803, 0.22145, 0.216989]),
            ])
         )
     

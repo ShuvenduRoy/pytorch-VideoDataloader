@@ -8,9 +8,48 @@ import cv2
 import os
 from torchvision.io import read_video
 
-__all__ = ['TorchVideoToTensor', 'VideoToTensor', 'VideoFilePathToTensor', 'VideoFolderPathToTensor', 'VideoResize',
-           'VideoRandomCrop', 'VideoCenterCrop', 'VideoRandomHorizontalFlip',
+__all__ = ['NormalizeVideo', 'TorchVideoToTensor', 'VideoToTensor', 'VideoFilePathToTensor', 'VideoFolderPathToTensor',
+           'VideoResize', 'VideoRandomCrop', 'VideoCenterCrop', 'VideoRandomHorizontalFlip',
            'VideoRandomVerticalFlip', 'VideoGrayscale']
+
+
+def normalize(clip, mean, std, inplace=False):
+    """
+    Args:
+        clip (torch.tensor): Video clip to be normalized. Size is (C, T, H, W)
+        mean (tuple): pixel RGB mean. Size is (3)
+        std (tuple): pixel standard deviation. Size is (3)
+    Returns:
+        normalized clip (torch.tensor): Size is (C, T, H, W)
+    """
+    if not inplace:
+        clip = clip.clone()
+    mean = torch.as_tensor(mean, dtype=clip.dtype, device=clip.device)
+    std = torch.as_tensor(std, dtype=clip.dtype, device=clip.device)
+    clip.sub_(mean[:, None, None, None]).div_(std[:, None, None, None])
+    return clip
+
+
+class NormalizeVideo(object):
+    """
+    Normalize the video clip by mean subtraction and division by standard deviation
+    Args:
+        mean (3-tuple): pixel RGB mean
+        std (3-tuple): pixel RGB standard deviation
+        inplace (boolean): whether do in-place normalization
+    """
+
+    def __init__(self, mean, std, inplace=False):
+        self.mean = mean
+        self.std = std
+        self.inplace = inplace
+
+    def __call__(self, clip):
+        """
+        Args:
+            clip (torch.tensor): video clip to be normalized. Size is (C, T, H, W)
+        """
+        return normalize(clip, self.mean, self.std, self.inplace)
 
 
 class TorchVideoToTensor(object):
@@ -42,7 +81,7 @@ class TorchVideoToTensor(object):
             frame_index = index * sample_factor + random_start_idx
             sample_index.append(frame_index)
 
-        video = video[:, sample_index, :, :] / 255
+        video = video[:, sample_index, :, :]  # / 255
         return video
 
 
@@ -100,7 +139,7 @@ class VideoToTensor(object):
             else:
                 frames[:, index:, :, :] = frames[:, index - 1, :, :].view(self.channels, 1, height, width)
 
-        frames /= 255
+        #         frames /= 255
         cap.release()
         return frames
 
@@ -192,7 +231,7 @@ class VideoFilePathToTensor(object):
                     frames[:, index:, :, :] = frames[:, index - 1, :, :].view(self.channels, 1, height, width)
                 break
 
-        frames /= 255
+        #         frames /= 255
         cap.release()
         return frames
 
@@ -269,7 +308,7 @@ class VideoFolderPathToTensor(object):
                     frames[:, index:, :, :] = frames[:, index - 1, :, :].view(channels, 1, height, width)
                 break
 
-        frames /= 255
+        #         frames /= 255
         return frames
 
 
