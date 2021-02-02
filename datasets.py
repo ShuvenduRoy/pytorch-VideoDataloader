@@ -104,3 +104,43 @@ class VideoDataloader(Dataset):
             video = self.transform(video)
         return video, label
 
+
+if __name__ == '__main__':
+    import transforms
+    import torchvision
+    import torch
+    dl = VideoDataloader('D:\\Dataset\\Video\\UCF\\UCF-101',
+                         transform=torchvision.transforms.Compose([
+                             transforms.VideoToTensor(max_len=16),
+                             transforms.VideoRandomCrop([236, 236]),
+                             transforms.VideoResize([224, 224]),
+                         ])
+                         )
+    video, label = dl[0]
+
+    dl = VideoFolderDataloader('D:\\Dataset\\Video\\UCF\\UCF-101',
+           train_ratio=0.9,
+           train_transform=torchvision.transforms.Compose([
+               transforms.VideoToTensor(max_len=16),
+               transforms.VideoRandomCrop([236, 236]),
+               transforms.VideoResize([224, 224]),
+           ]),
+
+           test_transform=torchvision.transforms.Compose([
+               transforms.VideoToTensor(max_len=16),
+               transforms.VideoCenterCrop([236, 236]),
+               transforms.VideoResize([224, 224]),
+           ])
+        )
+
+    video, label = dl.train_dl[2]
+
+    frame1 = torchvision.transforms.ToPILImage()(video[:, 0, :, :])
+    frame2 = torchvision.transforms.ToPILImage()(video[:, 15, :, :])
+    frame1.show()
+    frame2.show()
+
+    test_loader = torch.utils.data.DataLoader(dl.test_dl, batch_size=1, shuffle=True)
+
+    # for videos, labels in test_loader:
+    #     print(videos.size(), label)

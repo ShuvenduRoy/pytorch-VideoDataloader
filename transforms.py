@@ -123,8 +123,14 @@ class VideoToTensor(object):
 
         frames = torch.FloatTensor(self.channels, self.max_len, height, width)
 
+        indexes = []
         for index in range(self.max_len):
             frame_index = index * sample_factor + random_start_idx
+            indexes.append(frame_index)
+
+
+        for index in range(self.max_len):
+            frame_index = indexes[index]
             # read frame
             cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
             ret, frame = cap.read()
