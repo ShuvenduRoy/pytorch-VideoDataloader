@@ -15,20 +15,36 @@ class VideoFolderDataloader(object):
             for name in files:
                 self.all_videos.append(os.path.join(path, name))
 
-        np.random.permutation(range(len(self.all_videos)))
+        self.seperator = '/'
+        if '\\' in self.all_videos[0]:
+            self.seperator = '\\'
+
+        self.all_classes = []
+        for file in self.all_videos:
+            self.all_classes.append(file.split(self.seperator)[-2])
+
+        self.class_names = list(set(self.all_classes))
+        self.class_names.sort()
+
+        self.class_dict = {}
+        for i, c in enumerate(self.class_names):
+            self.class_dict[c] = i
+        print(self.class_dict)
+
+        np.random.shuffle(self.all_videos)
         train_files = self.all_videos[:int(len(self.all_videos) * self.train_ratio)]
         test_files = self.all_videos[int(len(self.all_videos) * self.train_ratio):]
         print('Training examples: ', len(train_files))
         print('Testing examples: ', len(test_files))
-        self.train_dl = VideoFileDataloader(train_files, True, train_transform)
-        self.test_dl = VideoFileDataloader(test_files, False, test_transform)
+        self.train_dl = VideoFileDataloader(train_files, train_transform, self.class_dict)
+        self.test_dl = VideoFileDataloader(test_files, test_transform, self.class_dict)
 
 
 class VideoFileDataloader(Dataset):
-    def __init__(self, video_list, train=False, transform=None):
+    def __init__(self, video_list, transform=None, class_dict=None):
         self.transform = transform
-        self.train = train
         self.all_videos = video_list
+        self.class_dict = class_dict
 
         self.seperator = '/'
         if '\\' in self.all_videos[0]:
@@ -38,13 +54,9 @@ class VideoFileDataloader(Dataset):
         for file in self.all_videos:
             self.all_classes.append(file.split(self.seperator)[-2])
 
-        class_dict = {}
-        for i, c in enumerate(set(self.all_classes)):
-            class_dict[c] = i
-
         self.labels = []
         for c in self.all_classes:
-            self.labels.append(class_dict[c])
+            self.labels.append(self.class_dict[c])
 
     def __len__(self):
         return len(self.all_videos)
@@ -67,42 +79,43 @@ class VideoFileDataloader(Dataset):
         return video, label
 
 
-class VideoDataloader(Dataset):
-    def __init__(self, folder_location, transform=None):
-        self.folder_location = folder_location
-        self.transform = transform
+class VideoDataloader(object):
+    def __init__(self, train_folder_location, test_folder_location=None, train_transform=None, test_transform=None):
+        self.train_folder_location = train_folder_location
+        self.test_folder_location = test_folder_location
+        self.train_transform = train_transform
+        self.test_transform = test_transform
 
-        self.all_videos = []
-        for path, subdirs, files in os.walk(self.folder_location):
+        self.train_videos = []
+        for path, subdirs, files in os.walk(self.train_folder_location):
             for name in files:
-                self.all_videos.append(os.path.join(path, name))
-        print('Total number of datapoints ', len(self.all_videos))
+                self.train_videos.append(os.path.join(path, name))
+        print('Total number of training datapoints ', len(self.train_videos))
+
+        self.test_videos = []
+        for path, subdirs, files in os.walk(self.test_folder_location):
+            for name in files:
+                self.test_videos.append(os.path.join(path, name))
+        print('Total number of testing datapoints ', len(self.test_videos))
 
         self.seperator = '/'
-        if '\\' in self.all_videos[0]:
+        if '\\' in self.train_videos[0]:
             self.seperator = '\\'
 
         self.all_classes = []
-        for file in self.all_videos:
+        for file in self.train_videos:
             self.all_classes.append(file.split(self.seperator)[-2])
 
-        class_dict = {}
-        for i, c in enumerate(set(self.all_classes)):
-            class_dict[c] = i
+        self.class_names = list(set(self.all_classes))
+        self.class_names.sort()
 
-        self.labels = []
-        for c in self.all_classes:
-            self.labels.append(class_dict[c])
+        self.class_dict = {}
+        for i, c in enumerate(self.class_names):
+            self.class_dict[c] = i
+        print(self.class_dict)
 
-    def __len__(self):
-        return len(self.all_videos)
-
-    def __getitem__(self, index):
-        video = self.all_videos[index]
-        label = self.labels[index]
-        if self.transform:
-            video = self.transform(video)
-        return video, label
+        self.train_dl = VideoFileDataloader(self.train_videos, train_transform, self.class_dict)
+        self.test_dl = VideoFileDataloader(self.test_videos, test_transform, self.class_dict)
 
 
 if __name__ == '__main__':
@@ -141,3 +154,8 @@ if __name__ == '__main__':
     print(video.shape)
     print(label.shape)
 
+    # all_cls = set()
+    # for video, label in train_loader.test_dl:
+    #     all_cls.add(int(label))
+    # print(len(all_cls))
+    # print(all_cls)
